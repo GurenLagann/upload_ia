@@ -1,14 +1,39 @@
-import { Github, FileVideo, Upload, Wand2 } from 'lucide-react'
+import { Github, Wand2 } from 'lucide-react'
 import { Button } from './components/ui/button'
 import { Separator } from './components/ui/separator'
 import { Textarea } from './components/ui/textarea'
 import { Label } from './components/ui/label'
-import { Select, SelectContent, SelectTrigger, SelectValue } from './components/ui/select'
-import { SelectItem } from '@radix-ui/react-select'
+import { Select, SelectContent, SelectTrigger, SelectValue, SelectItem } from './components/ui/select'
 import { Slider } from './components/ui/slider'
+import { VideoInputForm } from './components/video-input-form'
+import { PromptSelect } from './components/prompt-select'
+import { useState } from "react";
+import { useCompletion} from 'ai/react'
 
 
 export function App() {
+  const [temperature, setTemperature] = useState(0.5)
+
+  const [videoId, setVideoId] = useState<string | null>(null)
+
+
+  const {
+    input,
+    setInput,
+    handleInputChange,
+    handleSubmit,
+    completion,
+    isLoading,
+  } = useCompletion({
+    api: 'http://localhost:3333/ai/complete',
+    body: {
+      videoId,
+      temperature,
+    },
+    headers:{
+      "Content-type": "application/json",
+    }
+  })
 
   return (
     <div className='min-h-screen flex flex-col'>
@@ -26,7 +51,6 @@ export function App() {
             <Github className='w-4 h-4 mr-2' />
             Github
           </Button>
-
         </div>
       </div>
 
@@ -36,12 +60,15 @@ export function App() {
             <Textarea
               className='resize-none p-4 leading-relaxed'
               placeholder='Inclua o prompt para a IA...'
+              value={input}
+              onChange={handleInputChange}
             />
 
             <Textarea
               className='resize-none  p-4 leading-relaxed'
               placeholder='Resultado gerado pela IA...'
               readOnly
+              value={completion}
             />
           </div>
           <p className='text-sm text-muted-foreground'>
@@ -50,57 +77,22 @@ export function App() {
         </div>
 
         <aside className='w-80 space-y-6'>
-          <form className='space-y-6'>
-            <label
-              htmlFor="video"
-              className='border flex rounded-md aspect-video cursor-pointer border-dashed text-sm flex-col gap-2 items-center justify-center text-muted-foreground hover:bg-gray-600'
-            >
-              <FileVideo className='w-4 h-4' />
-              Selecione um Vídeo
-            </label>
 
-            <input type="file" id='video' accept='video/mp4' className='sr-only' />
-
-            <Separator />
-
-            <div className='space-y-2'>
-              <Label htmlFor='transcription_prompt'>Prompt de transcrição</Label>
-              <Textarea
-                id='transcription_prompt'
-                className='min-h-[20px] leading-relaxed'
-                placeholder='Inclua palavras-chave mencionadas no vídeo separada por virgua (,)'
-              />
-            </div>
-
-            <Button type='submit' className='w-full'>
-              Carregar Video
-              <Upload className='w-4 h-4 ml-2' />
-            </Button>
-          </form>
+          <VideoInputForm onVideoUploaded={setVideoId}/>
 
           <Separator />
 
-          <form className='space-y-6'>
-          <div className='space-y-2'>
-              <Label>Modelo</Label>
-              <Select >
-                <SelectTrigger>
-                  <SelectValue placeholder='Selecione um prompt ...' />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value='title'>Titulo para o Youtube </SelectItem>
-                  <SelectItem value='description'>Descrição para o Youtube</SelectItem>
-                </SelectContent>
-              </Select>
-
-             
+          <form onSubmit={handleSubmit} className='space-y-6'>
+            <div className='space-y-2'>
+              <Label>Prompt</Label>
+              <PromptSelect onPromptSelected={setInput}/>
             </div>
 
             <div className='space-y-2'>
               <Label>Modelo</Label>
               <Select disabled defaultValue='gpt3.5'>
                 <SelectTrigger>
-                  <SelectValue/>
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value='gpt3.5'>GPT 3.5-turbo 16k</SelectItem>
@@ -112,7 +104,7 @@ export function App() {
               </span>
             </div>
 
-            <Separator/>
+            <Separator />
 
             <div className='space-y-4'>
               <Label>Temperatura</Label>
@@ -120,6 +112,8 @@ export function App() {
                 min={0}
                 max={1}
                 step={0.1}
+                value={[temperature]}
+                onValueChange={value => setTemperature(value[0])}
               />
 
               <span className='block text-xs text-muted-foreground italic leading-relaxed'>
@@ -129,9 +123,9 @@ export function App() {
 
             <Separator />
 
-            <Button type='submit' className='w-full'>
+            <Button disabled={isLoading} type='submit' className='w-full'>
               Executar
-              <Wand2 className='w-4 h-4 ml-2'/>
+              <Wand2 className='w-4 h-4 ml-2' />
             </Button>
 
           </form>
